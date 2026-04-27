@@ -1,0 +1,332 @@
+ <!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>PAGO VIBE - Smart Hashtag Generator</title>
+    
+      
+ <style>
+        :root { --primary: #0044ff; --accent: #ff0044; --bg: #050505;}
+        body { background: var(--bg); color: #fff; font-family: 'Segoe UI', sans-serif; text-align: center; margin: 0; padding: 20px; }
+
+        .hashtag-wrapper {
+            background: rgba(255, 255, 255, 0.03);
+            backdrop-filter: blur(10px);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: 20px;
+            padding: 30px;
+            max-width: 600px;
+            margin: 40px auto;
+            box-shadow: 0 15px 35px rgba(0, 0, 0, 0.5);
+        }
+
+        .logo {  margin-bottom: 10px; }
+        
+
+        .input-area { margin-top: 25px; }
+        select { 
+    display: block; /* Isse margin auto kaam karega */
+    width: 100%; /* Width thoda kam kiya taaki side mein jagah dikhe */
+    max-width: 400px; /* Bade screen par bahut bada na ho */
+    margin: 0 auto 20px auto; /* Top 0, Right Auto, Bottom 20px, Left Auto */
+    padding: 18px; 
+    border-radius: 15px; 
+    border: 2px solid #222; 
+    background: #111; 
+    color: #fff; 
+    font-size: 18px; 
+    outline: none; 
+    cursor: pointer;
+    transition: 0.3s;
+}
+
+        select:focus { border-color: var(--primary); }
+
+        /* Button Container for Layout */
+        .btn-group { display: flex; gap: 10px; }
+
+        .gen-btn {
+            flex: 1; padding: 16px; border-radius: 15px; border: none;
+            background: linear-gradient(45deg, var(--primary), #0088ff); color: #fff;
+            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(0, 68, 255, 0.3);
+        }
+       .gen-btn:hover {
+    font-size: 0; /* Purana text "Pick Tags ⚡" chhup jayega */
+}
+
+.gen-btn:hover::after {
+    content: "Not Liked? Try Next! 🔄"; /* Naya text dikhega */
+    font-size: 14px; /* Naye text ka size wapas set karein */
+}
+
+
+        /* Viral Button Style */
+        .viral-btn {
+            flex: 1; padding: 16px; border-radius: 15px; border: none;
+            background: linear-gradient(45deg, #ff0044, #ff4400); color: #fff;
+            font-size: 16px; font-weight: bold; cursor: pointer; transition: 0.3s;
+            box-shadow: 0 5px 15px rgba(255, 0, 68, 0.3);
+        }
+
+        .gen-btn:hover, .viral-btn:hover { transform: scale(1.02); filter: brightness(1.1); }
+        .viral-btn:hover {
+    font-size: 0; /* Purana text "Pick Tags ⚡" chhup jayega */
+}
+.viral-btn:hover::after {
+    content: "Not Liked? Try Next! 🔄"; /* Naya text dikhega */
+    font-size: 14px; /* Naye text ka size wapas set karein */
+}
+
+
+        .tag-display-area {
+            margin-top: 25px; background: #000; border-radius: 15px; padding: 20px;
+            border: 1px dashed #444; display: none; text-align: left;
+            animation: fadeIn 0.5s ease;
+        }
+        @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+
+        #hashtagOutput {
+            color: #00ff88; font-size: 18px; line-height: 1.8;
+            word-wrap: break-word; white-space: pre-wrap; margin-bottom: 20px;
+            font-family: monospace;
+        }
+
+        .copy-button {
+            width: 100%; padding: 12px; border-radius: 10px; border: none;
+            background: #fff; color: #000; font-weight: bold; cursor: pointer; transition: 0.2s;
+        }
+        .copy-button:hover { background: #00ff88; }
+
+        #notification {
+            visibility: hidden; min-width: 250px; background: var(--primary); color: #fff;
+            text-align: center; border-radius: 50px; padding: 16px; position: fixed;
+            left: 50%; bottom: 30px; transform: translateX(-50%); z-index: 100;
+        }
+        #notification.show { visibility: visible; animation: pop 3s; }
+        @keyframes pop { 0%, 100% { opacity: 0; bottom: 0; } 15%, 85% { opacity: 1; bottom: 30px; } }
+       
+    </style>
+</head>
+<body>
+    <div style="position:fixed; top:15px; right:15px; z-index:10000;">
+    <div onclick="toggleMenu()" style="font-size:28px; cursor:pointer; background:rgba(255,255,255,0.1); width:45px; height:45px; display:flex; align-items:center; justify-content:center; border-radius:50%; backdrop-filter:blur(10px); color:white; border:1px solid rgba(255,255,255,0.2);">⋮</div>
+    <div id="myDropdown" style="display:none; position:absolute; right:0; top:55px; background:#1e293b; border:1px solid #334155; border-radius:12px; width:160px; box-shadow:0 10px 25px rgba(0,0,0,0.5); overflow:hidden;">
+        <div onclick="openSavedModal()" style="padding:12px; cursor:pointer; color:white; font-size:14px; border-bottom:1px solid #334155;">📂 Saved List</div>
+        <div onclick="clearAllData()" style="padding:12px; cursor:pointer; color:#ff4444; font-size:14px;">🗑️ Clear Data</div>
+    </div>
+</div>
+
+<div id="savedModal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.95); z-index:10001; padding:20px; align-items:center; justify-content:center;">
+    <div style="background:#0f172a; width:100%; max-width:400px; padding:20px; border-radius:20px; border:1px solid #1e293b; max-height:80vh; overflow-y:auto;">
+        <h3 style="color:#00ff88; text-align:center; margin-bottom:15px;">PAGO Collection</h3>
+        <div id="modalListArea"></div>
+        <button onclick="closeSavedModal()" style="width:100%; margin-top:20px; padding:12px; background:#ef4444; color:white; border:none; border-radius:10px; font-weight:bold; cursor:pointer;">CLOSE</button>
+    </div>
+</div>
+  
+
+   
+    
+<div class="hashtag-wrapper">
+    <div class="header" style="display:flex, justify-content:center;">
+        <h1 style="text-align:center; font-weight: 800; letter-spacing: 5px; background: linear-gradient(to bottom, #ffffff, #94a3b8); -webkit-background-clip: text; -webkit-text-fill-color: transparent; margin: 0; filter: drop-shadow(0 0 20px rgba(255,255,255,0.15));"> <span class="logo-text">PA<span class="blue">GO</span> VIBE</span> </h1>
+    <p style="color: #666; font-size: 14px; margin-top: -5px; font-weight:500">Generate viral hashtags and grow your reach.</p>
+
+    <div class="input-area">
+        <select id="topicSelect">
+            <option value="">-- Choose Category --</option>
+            <option value="emotional">😭 Emotional & Sad Story</option>
+            <option value="kisan">👨‍🌾 Kisan / Desi Farmer Life</option>
+            <option value="horror">👻 Horror / Bhoot Kahani</option>
+            <option value="funny">😂 Comedy & Funny</option>
+            <option value="action">⚔️ Action & Fight</option>
+            <option value="love">❤️ Love & Romantic</option>
+            <option value="motivation">🔥 Motivational / Success</option>
+            <option value="gaming">🎮 BGMI / Free Fire / Gaming</option>
+       <option value="ai" >🤖 AI Cartoon/Animation</option>
+            <option value="facts">📚 Amazing Facts / Education</option>
+            <option value="vlog">🎥 Travel & Mini Vlog</option>
+        </select>
+        
+        <div class="btn-group">
+            <button class="gen-btn" onclick="generateSmartTags()">Pick Tags ⚡</button>
+            <button class="viral-btn" onclick="generateViralOnly()">Get Viral Tags 🚀</button>
+        </div>
+    </div>
+
+    <div id="tagDisplay" class="tag-display-area">
+        <div id="hashtagOutput"></div>
+        <button class="copy-button" onclick="copyTags()">Copy 15 Unique Tags ✅</button>
+    </div>
+</div>
+
+<div id="notification">15 Tags Copied! 🔥</div>
+
+  
+<script>
+    
+ // 1. Menu Toggle Logic
+function toggleMenu() {
+    let menu = document.getElementById("myDropdown");
+    menu.style.display = (menu.style.display === "block") ? "none" : "block";
+}
+
+// 2. Updated Copy & Save Logic
+function copyTags() {
+    const text = document.getElementById('hashtagOutput').innerText;
+    const topic = document.getElementById('topicSelect').value || "Viral Tags";
+    
+    if (!text) return;
+
+    navigator.clipboard.writeText(text).then(() => {
+        // --- SAVE TO LOCALSTORAGE ---
+        let history = JSON.parse(localStorage.getItem("pago_vibe_history")) || [];
+        history.unshift({ text: text, cat: topic, time: new Date().toLocaleString() });
+        localStorage.setItem("pago_vibe_history", JSON.stringify(history));
+
+        // Show Notification
+        const toast = document.getElementById("notification");
+        toast.className = "show";
+        setTimeout(() => { toast.className = ""; }, 3000);
+        if (navigator.vibrate) navigator.vibrate(100);
+    });
+}
+
+
+   // 3. Open Modal and Show Saved Tags (Alert Hataya Gaya)
+function openSavedModal() {
+    document.getElementById("myDropdown").style.display = "none";
+    document.getElementById("savedModal").style.display = "flex";
+    
+    const listArea = document.getElementById("modalListArea");
+    const savedItems = JSON.parse(localStorage.getItem("pago_vibe_history")) || [];
+    
+    if(savedItems.length === 0) {
+        listArea.innerHTML = "<p style='text-align:center; color:gray; padding:20px;'>Abhi tak kuch save nahi kiya!</p>";
+        return;
+    }
+
+    listArea.innerHTML = savedItems.map((item, index) => `
+        <div style="background:rgba(255,255,255,0.05); padding:15px; margin-bottom:10px; border-radius:12px; border:1px solid #1e293b;">
+            <div style="font-size:12px; color:#00ff88; margin-bottom:5px;">📂 ${item.cat} (${item.time})</div>
+            <div style="font-size:14px; color:#f1f5f9; white-space:pre-wrap; margin-bottom:10px;">${item.text}</div>
+            <button onclick="navigator.clipboard.writeText(\`${item.text}\`); if(navigator.vibrate) navigator.vibrate(50);" 
+                    style="width:100%; padding:8px; background:#3b82f6; color:white; border:none; border-radius:8px; cursor:pointer; font-size:12px;">
+                COPY AGAIN
+            </button>
+        </div>
+    `).join("");
+
+}
+
+function closeSavedModal() { document.getElementById("savedModal").style.display = "none"; }
+
+function clearAllData() {
+    if(confirm("Kya aap saara saved data delete karna chahte hain?")) {
+        localStorage.removeItem("pago_vibe_history");
+        location.reload();
+    }
+}
+
+// Global click to close menu
+window.onclick = function(event) {
+    if (!event.target.matches('[onclick="toggleMenu()"]')) {
+        document.getElementById("myDropdown").style.display = "none";
+    }
+}
+   
+
+    const trendingLibrary = "#viral #trending #explore #explorepage #foryou #fyp #foryoupage #reels #reelsinstagram #instareels #shorts #youtubeshorts #viralvideo #trend #viralreels #videooftheday #contentcreator #digitalcreator #instagood #likeforlikes #followforfollowback #likesforlikes #comment4comment #share #subscribe #popular #instagramreels #reelitfeelit #exploremore #trendingnow #viralpost #dailyvideos #funnyvideo #entertainment #comedy #laugh #funnyreels #memes #lol #desivines #indiacreator #india #hindivideo #desireels #indianreels #reelsindia #trendingreels #viralindia #shortvideo #ytshortsindia #newvideo #mustwatch #watchtillend #loopvideo #repeat #wowvideo #amazingvideo #bestvideo #creatorlife #socialmedia #growth #audience #engagement #views #instaviral #reelkarofeelkaro #videoviral #exploreviral #topreels #reeltrending #trendingshorts #reelslover #reelvideo #reelviral #like4like #followme #supportme #subscribenow #growyourpage #viralcontent #bestreels #newreels #dailyreels #contentviral #globalviral #trendingindia #indianviral #exploreindia #foryouindia #videotrending #reelboost #viewboost #audiencegrowth #socialgrowth #viralboost #instatrending #ytviral #shortsviral #reelsboost";
+    const proLibrary = {
+    emotional: "#emotional #sad #sadstory #hearttouching #cry #feeling #dard #brokenheart #sadstatus #storytelling #pain #memories #deepthoughts #emotionalstatus #missyou #shayarivibes #sadness #truth #lifequotes #pagoai #hindishayari #dardshayari #rona #sadmoment #healing #alone #broken #heart #soul #reality #emotions #reelsindia #sadreels #trending #viral #foryou #explore #story #status #heartbreak #emotionalvideo #sadvideo #brokenlink #tears #silent #painful #lonely #innerpeace #sadlife #storytime #broken💔 #sadshayari #bewafa #aloneforever #imissyou #cryingscene #feelingsad #dil #gam #tanhai #zindagi #dhoka #heartless #sadvibes #hurting #mood #brokenline #waitforyou #endlesslove #painoflove #unspokenwords #deepfeelings #hurt #sadmood #missingsomeone #reelsviral #explorepage #trendingreels #fypage #instasad #mentalhealth #empathy #sadqoutes #truthoflife #soulfood #tearsinheaven #heartbrokenstatus #realife #hiddentalent #cryingreels #melancholy #depressedits #brokeninside #lovesad #heartbreakquotes #emotionaljourney #sadnesss #reach #viralcontent",
+
+    kisan: "#farmer #kisan #villagelife #hardwork #desivibe #indianfarmer #agriculture #khetibadi #organic #kisanzindabad #khet #gaon #desi #proudfarmer #tractor #farminglife #villagelove #natural #field #desihulk #desitadka #gramin #culture #kisanshakti #kheti #matti #sona #greenery #villagevlog #desi_vibe #kisanektazindabad #annadata #ruralindia #crops #harvest #desistyle #farmingvlog #agriculturelife #khetivadi #farmersmarket #haryana #punjab #villagefood #mitti #apnagaon #desilife #desipower #shaktiman #kisanlife #india #jattlife #kisani #organicfarming #tractorlover #swaraj #johndeere #farmhouselife #freshair #villageculture #desiculture #hindustani #khet_khaliyan #zamindar #villagelifestyle #greenindia #organicfood #kisan_ki_jaan #agrotech #farmingtools #kisanandolan #jaijawanjaikisan #traditional #villagescene #matti_ki_khushboo #naturalfarming #kisanhelper #agri #landowner #desiboy #villagebeauty #naturelover #ruralphotography #cropcycle #seasonalfarming #khetibadi_mehkma #farmingtips #smartfarming #modernagriculture #kisansuvidha #villagegrowth #puredesi #hardworkingfarmer #villagevibe #greenfield #farmersupport #kisan_power #farming_reels #village_reels #harvestingseason #agripics",
+
+    horror: "#horror #bhoot #scary #ghost #nightmare #mystery #darkstory #creepy #horrorcommunity #scarystories #ghoststory #haunted #paranormal #horrorfan #fear #spooky #blood #shadow #darkness #death #evil #monster #supernatural #horrorreels #bhootni #dar #kahani #urbanlegend #mysterystory #horroraddict #creepyvibe #demon #spirit #scaryvideo #horrorgram #chudail #hauntedhouse #scared #terror #thriller #horrorvibe #scaryreels #midnight #horrorart #cinematic #scarycontent #gore #dead #shiver #paranormalactivity #scaryclips #horrorfacts #creepyfacts #horrormovies #ghosthunter #darkaesthetic #haunting #creepypasta #nightwalker #horrornight #scarystuff #fearfactor #evilspirit #possession #exorcist #witch #blackmagic #darkart #scaryghost #bhootiyakahani #kahaniyan #mistery #unsolved #horrorobsessed #scariest #hauntedplaces #ghosttown #creepycreative #thrillerclips #suspense #horrorfanatic #darkhumor #bloodmoon #horrorshorts #bhootkikahani #daravani #aatma #shaitan #mritayu #rahasya #ghostreels #scaryface #paranormalinvestigation #hauntedlocations #creepymask #horrorjunkie #stayscary #darkworld #ghost",
+ai: "#aicartoon #aicartoons #aicartoonvideo #aicartoonvideos #aianimation #aianimated #aianimatedvideo #aianimatedvideos #aianimationvideo #aianimationvideos #aivideo #aivideos #aiart #aiartist #aicreator #aicontent #aigenerated #aigeneratedvideo #aigeneratedart #aiworld #aitools #aiediting #aivfx #aicreative #futureai #cartoonai #cartoonvideo #cartoonvideos #cartoonanimation #cartoonanimations #animatedcartoon #animatedvideo #animatedvideos #animationvideo #animationvideos #animationart #animationcreator #animationlife #3danimation #3dcartoon #3danimated #3dvideo #3dvideos #3dcharacter #3danimationvideo #cartoonlover #cartoonlovers #cartoonworld #cartoonfun #cartoonfunny #funnycartoon #cartoonstory #cartoonshorts #cartoonreels #cartooncontent #cartooncreator #digitalcartoon #digitalanimation #cgianimation #cgiart #cgivideo #virtualanimation #virtualcreator #virtualart #kidsanimation #kidsvideo #kidscontent #familyfriendly #funanimation #entertainmentvideo #viralcartoon #trendingcartoon #explorecartoon #cartoonviral #cartoontrend #aishorts #aireels #aiviral #aishortvideo #aiinstagram #aiyoutube #nextgenanimation #modernanimation #smartanimation #aiinnovation #techanimation",
+
+    funny: "#funny #comedy #jokes #lol #hansi #desicomedy #memes #funnystory #laughing #entertainment #comedian #funnyvideo #humor #mast #trendingfunny #chutkule #hahaha #funnymoment #comedyvideo #desijokes #viralfunny #bakchodi #funnyreels #lmao #comedycentral #funnypost #smile #jokesindia #comedyindia #funnyface #funnycontent #comedyvibe #funnymeme #desifun #mastii #comedylife #funnyclips #laugh #laughoutloud #funnypage #comedyreels #pagovibe #haha #fullhansi #comedynight #jokeoftheday #viralcomedy #desihumor #funnyvibe #epic #viral #trending #fyp #foryou #foryoupage #explore #explorepage #viralvideo #instafunny #reelitfeelit #reelsinstagram #shorts #youtubeshorts #bestcomedy #dailyfunny #nonstopfun #comedyking #pagalpanti #haso #funnyasf #relatablememes #memesdaily #dankmemes #savage #comedygold #shudhdesi #funnyshit #thuglife #laughs #comedyvlog #comedyskits #justforfun #trendingnow #indianmemes #funnymemes #instacomedy #comedyclub #fun #hilarious #comedyshow #comedyposts #funnyscenes #veryfunny #hahaa #crazyfunny #comedyreelsindia",
+
+    action: "#action #fight #hulk #stunt #power #thriller #bgmi #cinematic #actionscene #trending #hero #desihulk #warrior #stuntman #fighting #battle #actionmovie #adrenaline #combat #shakti #baaghi #actionreels #khatarnak #powerfull #brave #stuntlife #victory #aggression #actionshot #superhero #strong #muscle #fitnessaction #rush #hardcore #beastmode #war #force #impact #dynamic #actionvibe #bollyaction #southaction #powerfight #danger #survival #tactical #proaction #mission #fire #explosive #combatstyle #mma #actionhero #workout #powerlifting #bodybuilding #fightclub #actionchoreography #stuntdouble #speed #agility #actionstar #furious #hardwork #training #actionsequence #unstoppable #killerlook #heavyweight #stuntshow #parkour #actionaddict #lethal #warzone #badass #gladiator #bravery #actionjunkie #deadly #strongman #fitnessmotivation #beast #actionclip #stuntvideo #fightingreels #powerhouse #reelsviral #actionmovies #hollywoodaction #southindianaction #heroism #khatra #junoon #actiongames #stuntcrew #superpower #actionphotography #rushhour #climb",
+
+    love: "#love #romantic #couplegoals #shayarivibe #heart #lovestory #aesthetic #feelings #lovestatus #couple #ishq #mohabbat #pyaar #romanticstatus #lovesong #cutesweet #together #forever #couplevlog #lovereels #lovelife #valentines #heartfelt #purelove #romance #loveshayari #soulmate #husbandwife #girlfriend #boyfriend #lovers #crush #lovescene #aestheticlove #dreamy #loveliness #attachment #mylove #life #care #kindness #beauty #truebeauty #romanticvibes #loverschoice #pago #cute #kiss #hug #lover #hearttouching #foreverlove #lovely #couples #romancequotes #loveyou #darling #soul #deeplyinlove #romanticvlog #cutecouple #myworld #lovebird #romancevibes #beautyoflove #pureheart #emotionallove #shayarilovers #heartbeats #loveshayarihindi #dilse #pyar #mohabat #cuteromance #aestheticreels #couplegoals❤️ #lovestory❤️ #romanticcouples #lovelifequotes #fallinginlove #romanticsongs #sweetlove #loverelationship #caring #lovelights #truelovequotes #loversforever #lovevibesonly #beautifulcouple #romanceinkorea #aestheticvibes #lovemoment #coupleshoot #togetherforever #loveisintheair #soulconnection #loveyouself #dearlove",
+
+    motivation: "#motivation #success #goals #inspiration #hardwork #mindset #entrepreneur #morningvibes #power #hustle #focus #discipline #winner #dream #ambition #pagoai #motivationalquotes #dedication #leadership #positivity #growth #believe #strong #consistency #nevergiveup #limitless #successmindset #business #startup #action #results #effort #mindsetmatters #grind #workoutmotivation #lifechanging #willpower #inspired #shakti #jeet #junoon #manzil #khwab #tarraki #unstopable #goalgetter #producitvity #confidence #courage #wisdom #mentalstrength #positivevibes #entrepreneurship #selfgrowth #visionary #persistence #keepgoing #hardworkpaysoff #mindsetiseverything #achieve #leadershipquotes #dailymotivation #millionairemindset #motivationalvideo #selfmade #strength #fearless #striveforgreatness #winnercircle #believeinyourself #growthmindset #focusonthegoal #hardworkquotes #inspireothers #lifelessons #hustlehard #noexcuses #beunstoppable #successquotes #positivityiskey #mindsetgrowth #powerofpositivity #dreamers #futureleaders #hardworkers #motivationalpage #winnersmindset #selfbelief #ambitious #struggle #overcome #peakperformance #innerstrength #dailygrind #successlife #potential #mindfulness #transform #goaldigger",
+
+    gaming: "#gaming #bgmi #freefire #esports #gamer #proplayer #gameplay #pubgmobile #gamingcommunity #bgmimoments #pubgindia #clutch #bgmilovers #ffmax #headshot #gaminglife #streaming #pcgaming #mobilegaming #gamergirl #gamervibe #winnerwinner #freefireindia #ffgamer #headshotking #gamingclips #funnygaming #gamingnews #garena #conqueror #mortal #dynamo #totalgaming #gamingvideo #esportsindia #gamevibe #playbold #gamers #battleroyale #rushgameplay #pubgfunny #fflucky #gamingaddict #onlinegaming #gameon #prolevel #rush #clutchmoment #gamingworld #setup #gamingsetup #viralgaming #gamingreels #shorts #gamingchannel #codmobile #apexlegends #valorant #minecraft #gamersunite #gaminglifestyle #gamingmemes #progamer #esportslife #pubgm #ffcommunity #battlegroudsindia #rushhour #gamingpc #twitchstreamer #gamingroom #gamersofinstagram #gamingmemesdaily #ffhighlight #bgmiindia #esportstournament #gamingcontent #gamingpost #gametime #playstation #xbox #consolegaming #gamingtrends #esportsnews #mobilelegends #gameplayvideo #reelsgaming #gamingpro #clutchgod #fflovers #pubgclips #gamersuniteindia #gamingclipsdaily #ffviral #bgmiviral #headshotonly #gamingfever #gamingevolution #levelup",
+
+    facts: "#facts #education #learning #knowledge #science #gk #didyouknow #study #pagoai #amazingfacts #space #earth #history #biology #interestingfacts #techfacts #brainy #smart #factz #dailyfacts #educational #studentlife #generalknowledge #worldfacts #curiosity #mindblown #factdaily #diduknow #humanbody #naturefacts #universe #future #discovery #research #factchecking #pago #smartthinking #informative #factoftheday #intelligence #learn #think #grow #knowledgeispower #educationmatters #sciencefacts #tech #logic #factsindia #factsinhindi #knowledgebomb #currentaffairs #upsc #ias #mysteriousfacts #amazinglife #psychologyfacts #unknownfacts #worldhistory #spacefacts #technews #healthfacts #knowledgeable #factsdaily #studygram #gkquiz #generalknowledgeindia #lifehacks #brainteaser #factfinder #mindgrowth #educationalvideo #deeplearning #factsforeveryone #factoftheday #truth #wonder #explorefacts #brainpower #intelligencequotes #knowledgejunction #factsonly #didyouknowthat #truefacts #factsworld #interestingthinks #sciencenews #smartpeople #factsvideo #historicalfacts #ancienthistory #modernscience #techupdates #knowledgeaddict #learnsomethingnew #educationalcontent #smartlife #brainfood",
+
+    vlog: "#vlog #dailyvlog #minivlog #travel #lifestyle #explore #vlogger #hindivlog #travelgram #vloglife #wanderlust #trip #adventure #travelvlog #vloging #familyvlog #youtubevlog #vloggersindia #exploreindia #roadtrip #naturevlog #himalayas #citylife #foodvlog #vloger #contentcreator #pago #memories #traveldiaries #mumbai #delhi #villagevlog #desivlog #travelphotography #view #peace #beautiful #vacation #vlogreels #reelsindia #journey #traveler #travelvibe #dayinmylife #routine #morningvlog #nightvlog #summer #vlogupdate #lifestylevlog #exploring #mountainlife #beachvibes #solotravel #vlogmusic #vloggingcommunity #vlogmas #indiantraveler #maddyvlogs #souravjoshivlogs #flyingbeast #vloggoals #travelblogger #dailyroutine #mylifestyle #happylife #vlogshorts #traveldiaries #citytour #naturephotography #scenic #traveladdict #vlogtoday #newvlog #vlogjourney #travelstories #vlogseries #bestvlog #hiddengems #lifestyleblogger #dailyupdates #vloginglife #vlogstyle #exploremore #outdoors #vlogcreative #weekendvibe #travelmode #instavlog #vloggerslife #vlogtips #worldtravel #travellust #vlogpost #vlogbackground #vlogworld #vloggers #travelgoals"
+};
+    function processTags(source) {
+        let allTags = source.split(" ");
+        // Fisher-Yates shuffle logic
+        for (let i = allTags.length - 1; i > 0; i--) {
+            const j = Math.floor(Math.random() * (i + 1));
+            [allTags[i], allTags[j]] = [allTags[j], allTags[i]];
+        }
+        let selected15 = allTags.slice(0, 15);
+        document.getElementById('hashtagOutput').innerText = selected15.join(" ");
+        document.getElementById('tagDisplay').style.display = "block";
+        if (navigator.vibrate) navigator.vibrate(50);
+    }
+
+    // Function for Category Picker
+    function generateSmartTags() {
+        const selected = document.getElementById('topicSelect').value;
+        if (selected === "") {
+            processTags(trendingLibrary);
+        } else {
+            processTags(proLibrary[selected]);
+        }
+    }
+
+    // Function for Viral Button ONLY
+    function generateViralOnly() {
+        processTags(trendingLibrary);
+        document.getElementById('topicSelect').value = ""; // Reset dropdown
+    }
+
+    // Is function ko purane copyTags ki jagah replace kar dein
+function copyTags() {
+    const text = document.getElementById('hashtagOutput').innerText;
+    const topicSelect = document.getElementById('topicSelect');
+    const topicText = topicSelect.options[topicSelect.selectedIndex].text;
+    
+    if (!text || text === "") return;
+
+    navigator.clipboard.writeText(text).then(() => {
+        // --- SAVE TO LOCALSTORAGE LOGIC ---
+        let history = JSON.parse(localStorage.getItem("pago_vibe_history")) || [];
+        
+        // Naya data add karna
+        history.unshift({ 
+            text: text, 
+            cat: topicText, 
+            time: new Date().toLocaleString('en-IN', { hour: '2-digit', minute: '2-digit', day: '2-digit', month: 'short' }) 
+        });
+
+        // Limit history to 20 items only
+        if(history.length > 20) history.pop();
+
+        localStorage.setItem("pago_vibe_history", JSON.stringify(history));
+
+        // Show Notification
+        const toast = document.getElementById("notification");
+        toast.className = "show";
+        setTimeout(() => { toast.className = "notification"; }, 3000);
+        
+        if (navigator.vibrate) navigator.vibrate(100);
+    }).catch(err => {
+        console.error('Copy failed', err);
+    });
+}
+
+</script>
+</body>
+</html>
+
+    
